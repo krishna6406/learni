@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Learnify — Online Learning Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0a12;
+    --surface: #12121e;
+    --card: #1a1a2e;
+    --border: #2a2a45;
+    --accent: #7c5cfc;
+    --accent2: #fc5c7d;
+    --gold: #f5c842;
+    --text: #e8e8f0;
+    --muted: #7a7a9a;
+    --success: #3ecf8e;
+    --radius: 16px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  h1,h2,h3,h4 { font-family: 'Syne', sans-serif; }
+
+  /* NOISE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+
+  /* GLOW BLOBS */
+  .blob {
+    position: fixed; border-radius: 50%;
+    filter: blur(120px); opacity: 0.12; pointer-events: none; z-index: 0;
+  }
+  .blob1 { width: 600px; height: 600px; background: var(--accent); top: -200px; left: -200px; }
+  .blob2 { width: 500px; height: 500px; background: var(--accent2); bottom: -150px; right: -150px; }
+
+  /* NAV */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 48px;
+    background: rgba(10,10,18,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.6rem; font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    letter-spacing: -0.5px;
+  }
+  .nav-links { display: flex; gap: 32px; align-items: center; }
+  .nav-links a {
+    color: var(--muted); text-decoration: none;
+    font-size: 0.9rem; font-weight: 500;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 22px; border-radius: 50px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem; font-weight: 500;
+    cursor: pointer; border: none; transition: all 0.2s;
+    text-decoration: none;
+  }
+  .btn-ghost {
+    background: transparent; color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), #9d7cfc);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(124,92,252,0.35);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(124,92,252,0.45); }
+  .btn-accent2 {
+    background: linear-gradient(135deg, var(--accent2), #fc8c5c);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(252,92,125,0.35);
+  }
+  .btn-accent2:hover { transform: translateY(-1px); }
+
+  /* PAGES */
+  .page { display: none; position: relative; z-index: 1; animation: fadeUp 0.4s ease; }
+  .page.active { display: block; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* HERO */
+  .hero {
+    padding: 100px 48px 80px;
+    max-width: 1200px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(124,92,252,0.12);
+    border: 1px solid rgba(124,92,252,0.3);
+    border-radius: 50px; padding: 6px 14px;
+    font-size: 0.8rem; color: var(--accent); font-weight: 500;
+    margin-bottom: 20px;
+  }
+  .hero-badge span { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+  .hero h1 { font-size: 3.8rem; font-weight: 800; line-height: 1.1; letter-spacing: -2px; margin-bottom: 20px; }
+  .hero h1 em { font-style: normal; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .hero p { color: var(--muted); font-size: 1.1rem; line-height: 1.7; margin-bottom: 32px; }
+  .hero-btns { display: flex; gap: 12px; flex-wrap: wrap; }
+  .stats { display: flex; gap: 32px; margin-top: 40px; }
+  .stat { }
+  .stat-val { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; color: var(--text); }
+  .stat-label { font-size: 0.8rem; color: var(--muted); }
+
+  /* HERO VISUAL */
+  .hero-visual {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  }
+  .course-mini-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+  }
+  .course-mini-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+  .course-mini-card:nth-child(2) { margin-top: 24px; }
+  .course-mini-card:nth-child(4) { margin-top: -24px; }
+  .cm-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 12px; }
+  .cm-title { font-family: 'Syne', sans-serif; font-size: 0.9rem; font-weight: 700; margin-bottom: 4px; }
+  .cm-tag { font-size: 0.75rem; color: var(--muted); }
+  .cm-progress { margin-top: 12px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .cm-bar { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+
+  /* SECTION */
+  section { max-width: 1200px; margin: 0 auto; padding: 60px 48px; }
+  .section-header { text-align: center; margin-bottom: 48px; }
+  .section-header h2 { font-size: 2.4rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 12px; }
+  .section-header p { color: var(--muted); font-size: 1rem; max-width: 480px; margin: 0 auto; }
+
+  /* COURSE GRID */
+  .course-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .course-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+  }
+  .course-card:hover { transform: translateY(-6px); box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+  .course-thumb {
+    height: 160px; display: flex; align-items: center; justify-content: center;
+    font-size: 3rem; position: relative; overflow: hidden;
+  }
+  .course-body { padding: 20px; }
+  .course-cat {
+    display: inline-block; font-size: 0.7rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1px;
+    padding: 3px 10px; border-radius: 50px; margin-bottom: 10px;
+  }
+  .course-title { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; margin-bottom: 6px; line-height: 1.4; }
+  .course-desc { font-size: 0.82rem; color: var(--muted); margin-bottom: 14px; line-height: 1.6; }
+  .course-meta { display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; }
+  .course-rating { color: var(--gold); display: flex; align-items: center; gap: 4px; }
+  .course-price { font-family: 'Syne', sans-serif; font-weight: 700; }
+  .course-enroll-btn {
+    width: 100%; margin-top: 14px; padding: 10px;
+    border-radius: 10px; border: none; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 0.87rem; font-weight: 600;
+    background: rgba(124,92,252,0.15); color: var(--accent);
+    border: 1px solid rgba(124,92,252,0.25);
+    transition: all 0.2s;
+  }
+  .course-enroll-btn:hover { background: var(--accent); color: #fff; }
+  .course-enroll-btn.enrolled { background: rgba(62,207,142,0.15); color: var(--success); border-color: rgba(62,207,142,0.25); cursor: default; }
+
+  /* AUTH PAGES */
+  .auth-wrapper {
+    min-height: calc(100vh - 65px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px 24px;
+  }
+  .auth-box {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 24px; padding: 48px;
+    width: 100%; max-width: 460px;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.5);
+  }
+  .auth-logo { text-align: center; margin-bottom: 8px; font-size: 2rem; }
+  .auth-title { font-size: 1.8rem; font-weight: 800; text-align: center; margin-bottom: 6px; letter-spacing: -0.5px; }
+  .auth-sub { text-align: center; color: var(--muted); font-size: 0.9rem; margin-bottom: 36px; }
+  .form-group { margin-bottom: 18px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  label { display: block; font-size: 0.82rem; font-weight: 500; color: var(--muted); margin-bottom: 7px; }
+  input, select {
+    width: 100%; padding: 12px 16px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
+    outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  input:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(124,92,252,0.15);
+  }
+  input::placeholder { color: var(--border); }
+  select option { background: var(--surface); }
+  .form-submit {
+    width: 100%; padding: 14px; border-radius: 12px; border: none;
+    font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), #9d7cfc);
+    color: #fff; cursor: pointer;
+    box-shadow: 0 6px 24px rgba(124,92,252,0.35);
+    transition: all 0.2s; margin-top: 6px;
+  }
+  .form-submit:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(124,92,252,0.45); }
+  .auth-switch { text-align: center; margin-top: 24px; font-size: 0.87rem; color: var(--muted); }
+  .auth-switch a { color: var(--accent); text-decoration: none; font-weight: 500; }
+  .auth-switch a:hover { text-decoration: underline; }
+  .divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
+  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .divider span { font-size: 0.8rem; color: var(--muted); }
+
+  /* SOCIAL BTNS */
+  .social-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .social-btn {
+    padding: 10px; border-radius: 10px;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); font-size: 0.85rem; font-weight: 500;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: border-color 0.2s;
+  }
+  .social-btn:hover { border-color: var(--accent); }
+
+  /* DASHBOARD */
+  .dashboard { padding: 48px; max-width: 1200px; margin: 0 auto; }
+  .dash-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px; }
+  .dash-greeting h2 { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px; }
+  .dash-greeting p { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
+  .dash-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 40px; }
+  .dash-stat {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+  }
+  .dash-stat-icon { font-size: 1.5rem; margin-bottom: 10px; }
+  .dash-stat-val { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; }
+  .dash-stat-label { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+  .dash-section-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 20px; }
+  .enrolled-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .enrolled-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .ec-thumb { font-size: 2.2rem; }
+  .ec-title { font-family: 'Syne', sans-serif; font-size: 0.95rem; font-weight: 700; }
+  .ec-instructor { font-size: 0.8rem; color: var(--muted); }
+  .ec-progress-wrap { }
+  .ec-progress-label { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--muted); margin-bottom: 6px; }
+  .ec-bar-bg { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .ec-bar { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .ec-continue {
+    padding: 9px; border-radius: 10px; border: none; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 600;
+    background: rgba(124,92,252,0.12); color: var(--accent);
+    border: 1px solid rgba(124,92,252,0.2); transition: all 0.2s;
+  }
+  .ec-continue:hover { background: var(--accent); color: #fff; }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty-state h3 { font-size: 1.1rem; margin-bottom: 8px; color: var(--text); }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 32px; right: 32px; z-index: 999;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 16px 20px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    transform: translateY(100px); opacity: 0;
+    transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    max-width: 340px;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast-icon { font-size: 1.4rem; }
+  .toast-msg { font-size: 0.88rem; }
+  .toast-msg strong { display: block; font-weight: 600; margin-bottom: 2px; }
+  .toast-msg span { color: var(--muted); font-size: 0.82rem; }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 24px; padding: 40px;
+    max-width: 500px; width: 90%;
+    animation: fadeUp 0.3s ease;
+  }
+  .modal h3 { font-size: 1.4rem; font-weight: 800; margin-bottom: 8px; }
+  .modal p { color: var(--muted); font-size: 0.9rem; margin-bottom: 24px; }
+  .modal-btns { display: flex; gap: 12px; }
+  .modal-btns button { flex: 1; padding: 12px; border-radius: 12px; border: none; cursor: pointer; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.9rem; transition: all 0.2s; }
+  .modal-cancel { background: var(--surface); color: var(--muted); border: 1px solid var(--border) !important; }
+  .modal-confirm { background: linear-gradient(135deg, var(--accent), #9d7cfc); color: #fff; }
+
+  /* FOOTER */
+  footer {
+    text-align: center; padding: 32px 48px;
+    border-top: 1px solid var(--border);
+    color: var(--muted); font-size: 0.82rem;
+    position: relative; z-index: 1;
+  }
+
+  /* AVATAR */
+  .avatar {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.9rem;
+    color: #fff; cursor: pointer;
+  }
+
+  /* RESPONSIVE */
+  @media(max-width:900px) {
+    .hero { grid-template-columns: 1fr; padding: 60px 24px 40px; }
+    .hero-visual { display: none; }
+    nav { padding: 16px 24px; }
+    .nav-links a { display: none; }
+    section { padding: 40px 24px; }
+    .course-grid { grid-template-columns: 1fr; }
+    .dash-stats { grid-template-columns: 1fr 1fr; }
+    .enrolled-grid { grid-template-columns: 1fr; }
+    .dashboard { padding: 24px; }
+    .auth-box { padding: 32px 24px; }
+    .form-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="blob blob1"></div>
+<div class="blob blob2"></div>
+
+<!-- NAV -->
+<nav id="mainNav">
+  <div class="logo">Learnify</div>
+  <div class="nav-links" id="navLinks">
+    <a href="#" onclick="showPage('home')">Home</a>
+    <a href="#" onclick="showPage('courses')">Courses</a>
+    <a href="#" onclick="showPage('dashboard')" id="navDash" style="display:none">My Learning</a>
+    <button class="btn btn-ghost" onclick="showPage('login')" id="navLogin">Log In</button>
+    <button class="btn btn-primary" onclick="showPage('register')" id="navRegister">Get Started</button>
+    <div class="avatar" id="navAvatar" style="display:none" onclick="showPage('dashboard')"></div>
+    <button class="btn btn-ghost" onclick="logout()" id="navLogout" style="display:none">Logout</button>
+  </div>
+</nav>
+
+<!-- ===== HOME PAGE ===== -->
+<div id="page-home" class="page active">
+  <div class="hero">
+    <div>
+      <div class="hero-badge"><span></span> 50,000+ learners enrolled</div>
+      <h1>Learn Without <em>Limits</em></h1>
+      <p>Unlock world-class courses taught by industry experts. Build real skills, earn certificates, and advance your career at your own pace.</p>
+      <div class="hero-btns">
+        <button class="btn btn-primary" onclick="showPage('register')">Start Learning Free →</button>
+        <button class="btn btn-ghost" onclick="showPage('courses')">Browse Courses</button>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="stat-val">200+</div><div class="stat-label">Expert Courses</div></div>
+        <div class="stat"><div class="stat-val">50K</div><div class="stat-label">Students</div></div>
+        <div class="stat"><div class="stat-val">98%</div><div class="stat-label">Satisfaction</div></div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="course-mini-card">
+        <div class="cm-icon" style="background:rgba(124,92,252,0.2)">🐍</div>
+        <div class="cm-title">Python Mastery</div>
+        <div class="cm-tag">Programming</div>
+        <div class="cm-progress"><div class="cm-bar" style="width:68%"></div></div>
+      </div>
+      <div class="course-mini-card">
+        <div class="cm-icon" style="background:rgba(252,92,125,0.2)">🎨</div>
+        <div class="cm-title">UI/UX Design</div>
+        <div class="cm-tag">Design</div>
+        <div class="cm-progress"><div class="cm-bar" style="width:42%"></div></div>
+      </div>
+      <div class="course-mini-card">
+        <div class="cm-icon" style="background:rgba(245,200,66,0.2)">📊</div>
+        <div class="cm-title">Data Science</div>
+        <div class="cm-tag">Analytics</div>
+        <div class="cm-progress"><div class="cm-bar" style="width:85%"></div></div>
+      </div>
+      <div class="course-mini-card">
+        <div class="cm-icon" style="background:rgba(62,207,142,0.2)">☁️</div>
+        <div class="cm-title">Cloud & DevOps</div>
+        <div class="cm-tag">Engineering</div>
+        <div class="cm-progress"><div class="cm-bar" style="width:30%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <section>
+    <div class="section-header">
+      <h2>Featured Courses</h2>
+      <p>Handpicked by our experts for maximum career impact</p>
+    </div>
+    <div class="course-grid" id="featuredGrid"></div>
+    <div style="text-align:center;margin-top:36px">
+      <button class="btn btn-ghost" onclick="showPage('courses')">View All Courses →</button>
+    </div>
+  </section>
+
+  <footer>© 2025 Learnify. Designed for curious minds.</footer>
+</div>
+
+<!-- ===== COURSES PAGE ===== -->
+<div id="page-courses" class="page">
+  <section>
+    <div class="section-header">
+      <h2>All Courses</h2>
+      <p>Level up with 200+ courses across design, tech, business & more</p>
+    </div>
+    <div class="course-grid" id="allCoursesGrid"></div>
+  </section>
+  <footer>© 2025 Learnify</footer>
+</div>
+
+<!-- ===== LOGIN PAGE ===== -->
+<div id="page-login" class="page">
+  <div class="auth-wrapper">
+    <div class="auth-box">
+      <div class="auth-logo">🎓</div>
+      <h2 class="auth-title">Welcome back</h2>
+      <p class="auth-sub">Sign in to continue your learning journey</p>
+      <div class="social-btns">
+        <button class="social-btn">🔵 Google</button>
+        <button class="social-btn">⚫ GitHub</button>
+      </div>
+      <div class="divider"><span>or continue with email</span></div>
+      <div id="loginError" style="display:none;background:rgba(252,92,125,0.1);border:1px solid rgba(252,92,125,0.3);border-radius:10px;padding:10px 14px;font-size:0.85rem;color:var(--accent2);margin-bottom:16px;"></div>
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="loginEmail" placeholder="you@example.com"/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="Enter your password"/>
+      </div>
+      <button class="form-submit" onclick="doLogin()">Sign In →</button>
+      <p class="auth-switch">Don't have an account? <a href="#" onclick="showPage('register')">Create one free</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== REGISTER PAGE ===== -->
+<div id="page-register" class="page">
+  <div class="auth-wrapper">
+    <div class="auth-box">
+      <div class="auth-logo">✨</div>
+      <h2 class="auth-title">Create your account</h2>
+      <p class="auth-sub">Join 50,000+ learners and start today</p>
+      <div class="social-btns">
+        <button class="social-btn">🔵 Google</button>
+        <button class="social-btn">⚫ GitHub</button>
+      </div>
+      <div class="divider"><span>or register with email</span></div>
+      <div id="registerError" style="display:none;background:rgba(252,92,125,0.1);border:1px solid rgba(252,92,125,0.3);border-radius:10px;padding:10px 14px;font-size:0.85rem;color:var(--accent2);margin-bottom:16px;"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>First Name</label>
+          <input type="text" id="regFirst" placeholder="Riya"/>
+        </div>
+        <div class="form-group">
+          <label>Last Name</label>
+          <input type="text" id="regLast" placeholder="Sharma"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="regEmail" placeholder="you@example.com"/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="regPassword" placeholder="At least 6 characters"/>
+      </div>
+      <div class="form-group">
+        <label>Learning Goal</label>
+        <select id="regGoal">
+          <option value="">Select your goal...</option>
+          <option>Get a new job</option>
+          <option>Upskill professionally</option>
+          <option>Learn as a hobby</option>
+          <option>Build a business</option>
+          <option>Academic research</option>
+        </select>
+      </div>
+      <button class="form-submit" onclick="doRegister()">Create Account →</button>
+      <p class="auth-switch">Already have an account? <a href="#" onclick="showPage('login')">Sign in</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DASHBOARD PAGE ===== -->
+<div id="page-dashboard" class="page">
+  <div class="dashboard">
+    <div class="dash-header">
+      <div class="dash-greeting">
+        <h2 id="dashGreeting">Welcome back! 👋</h2>
+        <p id="dashSub">Pick up where you left off</p>
+      </div>
+      <button class="btn btn-primary" onclick="showPage('courses')">+ Enroll in Course</button>
+    </div>
+    <div class="dash-stats">
+      <div class="dash-stat">
+        <div class="dash-stat-icon">📚</div>
+        <div class="dash-stat-val" id="statEnrolled">0</div>
+        <div class="dash-stat-label">Courses Enrolled</div>
+      </div>
+      <div class="dash-stat">
+        <div class="dash-stat-icon">✅</div>
+        <div class="dash-stat-val" id="statCompleted">0</div>
+        <div class="dash-stat-label">Completed</div>
+      </div>
+      <div class="dash-stat">
+        <div class="dash-stat-icon">🏆</div>
+        <div class="dash-stat-val" id="statCerts">0</div>
+        <div class="dash-stat-label">Certificates</div>
+      </div>
+      <div class="dash-stat">
+        <div class="dash-stat-icon">🔥</div>
+        <div class="dash-stat-val">7</div>
+        <div class="dash-stat-label">Day Streak</div>
+      </div>
+    </div>
+    <div class="dash-section-title">My Courses</div>
+    <div id="enrolledList"></div>
+  </div>
+  <footer>© 2025 Learnify</footer>
+</div>
+
+<!-- ENROLL MODAL -->
+<div class="modal-overlay" id="enrollModal">
+  <div class="modal">
+    <h3 id="modalTitle">Enroll in Course</h3>
+    <p id="modalDesc">You're about to enroll. This course will be added to your dashboard.</p>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-confirm" onclick="confirmEnroll()">Enroll Now 🎉</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div class="toast-icon" id="toastIcon">🎉</div>
+  <div class="toast-msg">
+    <strong id="toastTitle"></strong>
+    <span id="toastSub"></span>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+const courses = [
+  { id:1, title:"Python for Beginners", cat:"Programming", icon:"🐍", color:"#7c5cfc", desc:"From zero to hero in Python. Master fundamentals, OOP, and real projects.", rating:4.8, reviews:2341, price:"Free", instructor:"Dr. Priya Nair" },
+  { id:2, title:"UI/UX Design Masterclass", cat:"Design", icon:"🎨", color:"#fc5c7d", desc:"Design stunning interfaces with Figma. User research, wireframes & prototypes.", rating:4.9, reviews:1876, price:"₹999", instructor:"Arjun Mehta" },
+  { id:3, title:"Data Science with Python", cat:"Analytics", icon:"📊", color:"#f5c842", desc:"Pandas, NumPy, visualization & machine learning for data-driven decisions.", rating:4.7, reviews:3102, price:"₹1,499", instructor:"Sneha Gupta" },
+  { id:4, title:"React & Next.js Complete", cat:"Web Dev", icon:"⚛️", color:"#3ecf8e", desc:"Build production-grade React apps with Next.js 14, TypeScript & Tailwind.", rating:4.8, reviews:2654, price:"₹1,299", instructor:"Rahul Sharma" },
+  { id:5, title:"Cloud & AWS DevOps", cat:"Engineering", icon:"☁️", color:"#fc8c5c", desc:"Deploy, scale, and monitor with AWS. CI/CD pipelines and containerization.", rating:4.6, reviews:987, price:"₹1,799", instructor:"Vikram Iyer" },
+  { id:6, title:"Digital Marketing Pro", cat:"Business", icon:"📈", color:"#5cc4fc", desc:"SEO, social media, email campaigns and analytics for modern businesses.", rating:4.7, reviews:1543, price:"₹799", instructor:"Meera Patel" },
+];
+
+let currentUser = null;
+let enrolledCourses = [];
+let pendingCourseId = null;
+
+// ===== STATE =====
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  if(name==='courses') renderAllCourses();
+  if(name==='dashboard') renderDashboard();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function updateNav() {
+  const loggedIn = !!currentUser;
+  document.getElementById('navLogin').style.display = loggedIn ? 'none' : '';
+  document.getElementById('navRegister').style.display = loggedIn ? 'none' : '';
+  document.getElementById('navAvatar').style.display = loggedIn ? '' : 'none';
+  document.getElementById('navLogout').style.display = loggedIn ? '' : 'none';
+  document.getElementById('navDash').style.display = loggedIn ? '' : 'none';
+  if(loggedIn) {
+    const initials = (currentUser.first[0] + currentUser.last[0]).toUpperCase();
+    document.getElementById('navAvatar').textContent = initials;
+  }
+}
+
+// ===== AUTH =====
+const users = {};
+
+function doRegister() {
+  const first = document.getElementById('regFirst').value.trim();
+  const last = document.getElementById('regLast').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const pass = document.getElementById('regPassword').value;
+  const goal = document.getElementById('regGoal').value;
+  const err = document.getElementById('registerError');
+
+  if(!first||!last) return showError(err,'Please enter your full name.');
+  if(!email||!email.includes('@')) return showError(err,'Please enter a valid email.');
+  if(pass.length < 6) return showError(err,'Password must be at least 6 characters.');
+  if(users[email]) return showError(err,'An account with this email already exists.');
+
+  users[email] = { first, last, email, pass, goal };
+  err.style.display = 'none';
+  currentUser = users[email];
+  enrolledCourses = [];
+  updateNav();
+  showToast('🎉','Account Created!',`Welcome to Learnify, ${first}!`);
+  showPage('courses');
+}
+
+function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPassword').value;
+  const err = document.getElementById('loginError');
+
+  if(!email||!pass) return showError(err,'Please fill in all fields.');
+  if(!users[email]) return showError(err,'No account found with this email.');
+  if(users[email].pass !== pass) return showError(err,'Incorrect password. Try again.');
+
+  err.style.display = 'none';
+  currentUser = users[email];
+  updateNav();
+  showToast('👋','Welcome back!',`Great to see you again, ${currentUser.first}!`);
+  showPage('dashboard');
+}
+
+function logout() {
+  currentUser = null;
+  updateNav();
+  showPage('home');
+  showToast('👋','Logged out','See you again soon!');
+}
+
+function showError(el, msg) {
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+// ===== COURSES =====
+function renderCourseCard(c, container, featured=false) {
+  const isEnrolled = enrolledCourses.includes(c.id);
+  const card = document.createElement('div');
+  card.className = 'course-card';
+  card.innerHTML = `
+    <div class="course-thumb" style="background:${c.color}22">
+      <span>${c.icon}</span>
+    </div>
+    <div class="course-body">
+      <span class="course-cat" style="background:${c.color}22;color:${c.color}">${c.cat}</span>
+      <div class="course-title">${c.title}</div>
+      <div class="course-desc">${c.desc}</div>
+      <div class="course-meta">
+        <div class="course-rating">⭐ ${c.rating} <span style="color:var(--muted)">(${c.reviews.toLocaleString()})</span></div>
+        <div class="course-price" style="color:${c.price==='Free'?'var(--success)':'var(--text)'}">${c.price}</div>
+      </div>
+      <button class="course-enroll-btn ${isEnrolled?'enrolled':''}" onclick="handleEnroll(${c.id}, event)">
+        ${isEnrolled ? '✅ Enrolled' : '+ Enroll Now'}
+      </button>
+    </div>
+  `;
+  container.appendChild(card);
+}
+
+function renderFeatured() {
+  const grid = document.getElementById('featuredGrid');
+  grid.innerHTML = '';
+  courses.slice(0,3).forEach(c => renderCourseCard(c, grid, true));
+}
+
+function renderAllCourses() {
+  const grid = document.getElementById('allCoursesGrid');
+  grid.innerHTML = '';
+  courses.forEach(c => renderCourseCard(c, grid));
+}
+
+function handleEnroll(courseId, e) {
+  e.stopPropagation();
+  if(!currentUser) {
+    showToast('🔒','Login Required','Please log in or register to enroll.');
+    showPage('login');
+    return;
+  }
+  if(enrolledCourses.includes(courseId)) return;
+  pendingCourseId = courseId;
+  const c = courses.find(x=>x.id===courseId);
+  document.getElementById('modalTitle').textContent = `Enroll in "${c.title}"`;
+  document.getElementById('modalDesc').textContent = `By ${c.instructor} · ${c.price === 'Free' ? 'Completely Free' : c.price} · Lifetime access included.`;
+  document.getElementById('enrollModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('enrollModal').classList.remove('open');
+  pendingCourseId = null;
+}
+
+function confirmEnroll() {
+  if(!pendingCourseId) return;
+  enrolledCourses.push(pendingCourseId);
+  closeModal();
+  const c = courses.find(x=>x.id===pendingCourseId);
+  showToast('🎓','Enrolled!',`You're now learning "${c.title}"`);
+  // refresh buttons
+  renderAllCourses();
+  renderFeatured();
+}
+
+// ===== DASHBOARD =====
+function renderDashboard() {
+  if(!currentUser) { showPage('login'); return; }
+  document.getElementById('dashGreeting').textContent = `Welcome back, ${currentUser.first}! 👋`;
+  document.getElementById('dashSub').textContent = `Your goal: ${currentUser.goal || 'Learn something new'}`;
+  document.getElementById('statEnrolled').textContent = enrolledCourses.length;
+  document.getElementById('statCompleted').textContent = Math.floor(enrolledCourses.length * 0.3);
+  document.getElementById('statCerts').textContent = Math.floor(enrolledCourses.length * 0.3);
+
+  const list = document.getElementById('enrolledList');
+  list.innerHTML = '';
+  if(enrolledCourses.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div style="font-size:3rem;margin-bottom:16px">📚</div><h3>No courses yet</h3><p>Browse our catalog and enroll in your first course!</p><br><button class="btn btn-primary" onclick="showPage('courses')">Browse Courses →</button></div>`;
+    return;
+  }
+  const grid = document.createElement('div');
+  grid.className = 'enrolled-grid';
+  enrolledCourses.forEach(id => {
+    const c = courses.find(x=>x.id===id);
+    const progress = Math.floor(Math.random()*70 + 10);
+    const card = document.createElement('div');
+    card.className = 'enrolled-card';
+    card.innerHTML = `
+      <div class="ec-thumb">${c.icon}</div>
+      <div>
+        <div class="ec-title">${c.title}</div>
+        <div class="ec-instructor">by ${c.instructor}</div>
+      </div>
+      <div class="ec-progress-wrap">
+        <div class="ec-progress-label"><span>Progress</span><span>${progress}%</span></div>
+        <div class="ec-bar-bg"><div class="ec-bar" style="width:${progress}%"></div></div>
+      </div>
+      <button class="ec-continue">Continue Learning →</button>
+    `;
+    grid.appendChild(card);
+  });
+  list.appendChild(grid);
+}
+
+// ===== TOAST =====
+function showToast(icon, title, sub) {
+  document.getElementById('toastIcon').textContent = icon;
+  document.getElementById('toastTitle').textContent = title;
+  document.getElementById('toastSub').textContent = sub;
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ===== INIT =====
+renderFeatured();
+</script>
+</body>
+</html>
